@@ -25,7 +25,6 @@
            "longname",     "graupel mixing ratio"
            "units",        "kg/kg"
        "profile_type", "fixed", "surface_value=1.e30" /
-# prognostic ozone mixing ratio tracer
  "TRACER", "atmos_mod", "o3mr"
            "longname",     "ozone mixing ratio"
            "units",        "kg/kg"
@@ -35,7 +34,7 @@
            "longname",     "cloud amount"
            "units",        "1"
        "profile_type", "fixed", "surface_value=1.e30" /
-#Joseph: must be added to setup the number of exchanged trancers,
+#Joseph: must be added to setup the number of exchanged tracers,
 # in full/atm_land_ice_flux_exchange.F90, otherwise the model crashes
  "TRACER", "land_mod", "sphum"
            "longname",     "specific humidity"

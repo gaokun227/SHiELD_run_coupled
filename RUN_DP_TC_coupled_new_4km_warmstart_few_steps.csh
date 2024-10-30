@@ -1,102 +1,94 @@
 #!/bin/tcsh 
-#SBATCH --output=./stdout/%x.o%j
-#SBATCH --job-name=TC_DP_shiemom
-#SBATCH --time=09:00:00
-#SBATCH --cluster=c6
-#SBATCH --nodes=9
-
-# This script is optimized for double-periodic TC configuration 
-# Joseph.Mouallem.noaa.gov or Kun.Gao@noaa.gov
-
-# Joseph: upgraded to run shiemom (shield+mom6)
-# will need to external mom6 files and grid files by BuildGrid.csh
-# check slides for more info:
-# https://docs.google.com/presentation/d/1DZ3vk96gJ_ETbtRxSWxbdSnP7xBgagBkslnJr-g_lMM/edit#slide=id.p
+#SBATCH --output=/autofs/ncrc-svm1_home1/Kun.Gao/SHiELD_MOM6/SHiELD_run/stdout/%x.o%j
+#SBATCH --job-name=TC_DP_coupled
+#SBATCH --partition=batch
+#SBATCH --qos=urgent
+#SBATCH --account=gfdl_w
+#SBATCH --time=02:00:00
+#SBATCH --cluster=c5
+#SBATCH --ntasks=128
 
 set echo
 
-# NEEDS TO BE SET
-################################
-set BASE_DIR    = "/gpfs/f6/gfdl/world-shared/Joseph.Mouallem/test/"     # For the sim results
-set BUILD_DIR = "~${USER}/shiemom_clean1/SHiELD_build/"                  # Build directory
-set RUN_DIR = "`pwd`"                           # For the diag_table, field_table, momsis input
-################################
-
-# COPY input data (for SHiELD, mosaic)
-################################
-set INPUT_DATA = "/gpfs/f6/gfdl/world-shared/Joseph.Mouallem/shiemom_pdata/TEMP_INPUT/"
-set MOSAIC_DATA = "/gpfs/f6/gfdl/world-shared/Joseph.Mouallem/shiemom_pdata/INPUT/"
-################################
-
 # --- KG: optional paramters for experiments
-set sst = 303
+set sst = 301
 set ini_storm = "big2" # "small", "med2", "big2"
 set deglat = 20 
-set days = 1 
+set days = 0 
+set hours = 0 
 set hord_option = "hord6"
-set warm_start = ".F." # if true, set restart_dir
-set res = "4km" # available options: 1km or 2km or 4km
-set rough = "hwrf17" # hwrf17; coare3.5; beljaars; charnock
-set MEMO = ${hord_option}"_"${deglat}"N_"${sst}"K_"${ini_storm}"_"${days}"d_"${res}
+set res = "4km" # if true, set restart_dir
+set EXE  = "intel.x_main_new2"
+set npz = 50
+set rough = "hwrf17"
+set MEMO = "coupled_warmstart_nonNeutral_"${rough}"_test2_"${hord_option}"_"${deglat}"N_"${sst}"K_"${ini_storm}"_"${hours}"h_"${res}
+set warm_start = ".T." # if true, set restart_dir
 
-set RELEASE = "SHiEMOM"
+#set restart_dir = "/gpfs/f5/gfdl_w/scratch/Kun.Gao/SHiELD_MOM6/g1/base/20180921.00Z.TC.nh.64bit.non-mono.coupled_base_hord6_20N_301K_small_3d_4km/rundir/RESTART/"
+#set restart_dir = "/gpfs/f5/gfdl_w/scratch/Kun.Gao/SHiELD_MOM6/ctrl/20180921.00Z.TC.nh.64bit.non-mono.coupled_noSST_hord6_20N_303.15K_"${ini_storm}"_5d_4km/rundir/RESTART"
+
+set restart_dir = "/gpfs/f5/gfdl_w/scratch/Kun.Gao/SHiELD_MOM6/base/20180921.00Z.TC.nh.64bit.non-mono.coupled_noSST_hord6_20N_303.15K_big2_5d_4km/rundir/RESTART/"
+
+# --- KG: end of optional paramters for experiments
+
+set INPUT_DATA = "/gpfs/f5/gfdl_w/proj-shared/SHiELD_INPUT_DATA/"
+set RELEASE = "SHiELD_MOM6"
+
+set BASE_DIR    = "/gpfs/f5/gfdl_w/scratch/Kun.Gao/"
+set BUILD_DIR = "~${USER}/SHiELD_MOM6/SHiELD_build/"
+set RUN_DIR = "~${USER}/SHiELD_MOM6/SHiELD_run/"
 
 # case specific details
 set TYPE = "nh"        
 set MODE = "64bit"
 set MONO = "non-mono" 
-set GRID = "DP"
+set GRID = "dp"
 set CASE = "TC"
-set DATE = "20240920.00Z"
+set DATE = "20180921.00Z"
+#set PBL  = "TKE"       # choices:  TKE or YSU
 set PBL  = "YSU"        # choices:  TKE or YSU
 set HYPT = "on"         # choices:  on, off  (controls hyperthreading)
 set COMP = "repro"       # choices:  debug, repro, prod
 set NO_SEND = "no_send" # choices:  send, no_send
-set EXE  = "intel.x"
 
 # directory structure
 set WORKDIR    = ${BASE_DIR}/${RELEASE}/${DATE}.${CASE}.${TYPE}.${MODE}.${MONO}.${MEMO}/
-set executable = ${BUILD_DIR}/Build/bin/SHiEMOM_${TYPE}.${COMP}.${MODE}.${EXE}
+set executable = ${BUILD_DIR}/Build/bin/SHiELD_${TYPE}.${COMP}.${MODE}.${EXE}
 
 set RUNNAME = ${DATE}.${GRID}.${MEMO}
 
 # input filesets
-set FIXDIR  = ${INPUT_DATA}/fix_am_gfsv16/
+#set FIXDIR  = ${INPUT_DATA}/fix_am_gfsv16/
+set FIXDIR  = ${INPUT_DATA}/fix.v202104
 set CLIMO_DATA = ${INPUT_DATA}/climo_data.v201807/
 
 # sending file to gfdl
 set gfdl_archive = /archive/${USER}/${RELEASE}/${DATE}.${GRID}.${MEMO}/
-set SEND_FILE = ${USER}/Util/send_file_slurm.csh
-set TIME_STAMP = ${USER}/Util/time_stamp.csh
+set SEND_FILE = /ncrc/home1/Kun.Gao/Util/send_file_slurm.csh
+set TIME_STAMP = /ncrc/home1/Kun.Gao/Util/time_stamp.csh
 
-set DIAG_TABLE  = ${RUN_DIR}/tables/diag_table_6species_tc_dp_ocean
-set FIELD_TABLE = ${RUN_DIR}/tables/field_table_6species_atmland # will be changed later if tke-edmf is used
+#set DIAG_TABLE  = ${RUN_DIR}/diag_table_6species_tc_dp_ocean_fast
+set DIAG_TABLE  = ${RUN_DIR}/diag_table_shield_mom6_dt
+set FIELD_TABLE = ${RUN_DIR}/field_table_6species_atmland # will be changed later if tke-edmf is used
 
 # Resolution
 switch ($res) #assuming domain size=10deg, need to adjust timestep, move it here XXXX
-case "1km":
- set npx = "1025"
- set npy = "1025"
- set k_split = "10"
-   breaksw
 case "2km":
  set npx = "513"
  set npy = "513"
- set k_split = "5"
-   breaksw
+ breaksw
 case "4km":
  set npx = "257"
  set npy = "257"
- set k_split = "3"
 endsw
 
-set npz = "50"
-set layout_x = "30" 
-set layout_y = "30" 
+set layout_x = "8" 
+set layout_y = "16" 
 set io_layout = "1,1"
 set nthreads = "2"
 
 # time step parameters
+set k_split = "4"
 set n_split = "5"
 set dt_atmos = "90"
 
@@ -164,15 +156,15 @@ set blocksize = "32"
 # run length
 set months = "0"
 set days = $days
-set hours = "1"
+set hours = $hours 
 set minutes = "0"
 set seconds = "0"
 
 set print_freq = "1"
 
 # variables for gfs diagnostic output intervals and time to zero out time-accumulated data
-set fdiag = "1."
-set fhzer = "1."
+set fdiag = "0.025" #"3."
+set fhzer = "0.025" #"3."
 set fhcyc = "0."
 
 # set various debug options
@@ -200,6 +192,7 @@ setenv MALLOC_MMAP_MAX_ 0
 setenv MALLOC_TRIM_THRESHOLD_ 536870912
 setenv NC_BLKSZ 1M
 # necessary for OpenMP when using Intel
+#setenv KMP_STACKSIZE 256m
 setenv KMP_STACKSIZE 512m
 
 rm -rf $WORKDIR/rundir
@@ -207,35 +200,9 @@ mkdir -p $WORKDIR/rundir
 cd $WORKDIR/rundir
 mkdir -p RESTART INPUT
 
-cp ${RUN_DIR}/MOMSIS_INPUTFILES/MOM_input .
-cp ${RUN_DIR}/MOMSIS_INPUTFILES/SIS_input .
-cp ${RUN_DIR}/MOMSIS_INPUTFILES/MOM_override_${res} MOM_override
-cp ${RUN_DIR}/MOMSIS_INPUTFILES/SIS_override_${res} SIS_override
-ln -sf ${MOSAIC_DATA}/DP_${res}/* INPUT/
-
-set irun = 1
-set nruns = 1
-
-while ( $irun <= $nruns )
-
-if ( $irun == 1 ) then
- set warm_start = ".F."
- set input_filename = 'n'
-else
-   # move the restart data into INPUT/
-   if ($NO_SEND == "no_send") then
-    mv RESTART/* INPUT/.
-   else
-    ln -s $restart_file/* INPUT/.
-   endif
-
-   # reset values in input.nml for restart run
-  # set make_nh = ".F."
-  # set nggps_ic = ".F."
-  # set mountain = ".T."
-  # set external_ic = ".F."
-   set warm_start = ".T."
- set input_filename = 'r'
+# move the restart data into INPUT/
+if ($warm_start == ".T.") then 
+   ln -sf $restart_dir/* INPUT/
 endif
 
 # build the date for curr_date and diag_table from DATE
@@ -246,6 +213,7 @@ set d = `echo ${DATE} | cut -c7-8`
 set h = `echo ${DATE} | cut -c10-11`
 set echo
 set curr_date = "${y},${m},${d},${h},0,0"
+#set curr_date = "1900,1,1,0,0,0"
 
 # build the diag_table with the experiment name and date stamp
 cat >! diag_table << EOF
@@ -275,41 +243,61 @@ foreach file ( $FIXDIR/global_volcanic_aerosols_????-????.txt )
         ln -sf $file INPUT/`echo $file:t | sed s/global_volcanic_aerosols/volcanic_aerosols/g`
 end
 
-echo "ls working dir"
-ls .
+# MOM6 input - take from Joseph's directories
+switch ($res) 
+case "2km":
+cp /autofs/ncrc-svm1_home2/Joseph.Mouallem/shiemom/run/2km/MOMSIS_INPUTFILES/MOM_input .
+cp /autofs/ncrc-svm1_home2/Joseph.Mouallem/shiemom/run/2km/MOMSIS_INPUTFILES/MOM_override .
+cp /autofs/ncrc-svm1_home2/Joseph.Mouallem/shiemom/run/2km/MOMSIS_INPUTFILES/SIS_input .
+cp /autofs/ncrc-svm1_home2/Joseph.Mouallem/shiemom/run/2km/MOMSIS_INPUTFILES/SIS_override .
+#echo "CREATING MOSAIC FILES"
+# CREATE GRID FILES ATM-OCEAN-LAND mosaic
+#tcsh /autofs/ncrc-svm1_home2/Joseph.Mouallem/shiemom/run/BuildGrid.csh
+ln -sf /gpfs/f5/gfdl_w/proj-shared/shiemom/Joseph.Mouallem/INPUT_2km/* INPUT/
+ln -sf /gpfs/f5/gfdl_w/scratch/Joseph.Mouallem/F2_pdata_IC/shiemom/INPUT_2km/* INPUT/
+breaksw
+
+case "4km":
+cp /autofs/ncrc-svm1_home2/Joseph.Mouallem/shiemom/run/MOMSIS_INPUTFILES/MOM_input .
+cp /autofs/ncrc-svm1_home2/Joseph.Mouallem/shiemom/run/MOMSIS_INPUTFILES/MOM_override .
+cp /autofs/ncrc-svm1_home2/Joseph.Mouallem/shiemom/run/MOMSIS_INPUTFILES/SIS_input .
+cp /autofs/ncrc-svm1_home2/Joseph.Mouallem/shiemom/run/MOMSIS_INPUTFILES/SIS_override .
+ln -sf /gpfs/f5/gfdl_w/world-shared/Joseph.Mouallem/shiemom_pdata/INPUT/* INPUT/
+endsw
 
 cat >! input.nml <<EOF
 
  &SIS_input_nml
-       output_directory = './',
-       input_filename = ${input_filename}
-       restart_input_dir = 'INPUT/',
-       restart_output_dir = 'RESTART/',
-       parameter_filename = 'SIS_input',
-                            'SIS_override' 
+        output_directory = './',
+        input_filename = 'n'
+        restart_input_dir = 'INPUT/',
+        restart_output_dir = 'RESTART/',
+        parameter_filename = 'SIS_input',
+                             'SIS_override' 
 /
 
+
  &MOM_input_nml
-       output_directory = '.',
-       input_filename = ${input_filename}
-       restart_input_dir = 'INPUT',
-       restart_output_dir = 'RESTART',
-       parameter_filename = 'MOM_input',
-                             'MOM_override'
+        output_directory = '.',
+        input_filename = 'n'
+        restart_input_dir = 'INPUT',
+        restart_output_dir = 'RESTART',
+        parameter_filename = 'MOM_input',
+                              'MOM_override'
 /
 
  &ice_albedo_nml
-       t_range = 10. 
+       t_range = 10.
 /
 
  &ice_model_nml
 /
 
  &icebergs_nml
-/
+ /
 
  &monin_obukhov_nml
-       neutral = .false. ! KGao: should not use true for coupled mode
+       neutral = .false. ! kgao - should not use true 
 /
 
  &ocean_albedo_nml
@@ -317,7 +305,7 @@ cat >! input.nml <<EOF
 /
 
  &ocean_rough_nml
-       rough_scheme = $rough ! KGao: 'hwrf17' is highly recommended; options: 'hwrf17','coare3.5','beljaars','charnock'
+       rough_scheme = $rough !options: 'hwrf17','coare3.5','beljaars','charnock'
 /
 
  &sat_vapor_pres_nml
@@ -326,10 +314,11 @@ cat >! input.nml <<EOF
 /
 
  &surface_flux_nml
-       ncar_ocean_flux = .false. ! KGao: must be false for the coupled mode
+       ncar_ocean_flux = .false. ! KGao: this overrides ustar,cd,ch
        raoult_sat_vap = .true.
-       do_iter_monin_obukhov = .true. ! KGao: turn this on for hwrf17 rough scheme
-       niter_monin_obukhov = 2 ! KGao: 2 should work great
+       !iter_mo = .true.
+       do_iter_monin_obukhov = .true.
+       niter_monin_obukhov = 2 
 /
 
  &topography_nml
@@ -340,8 +329,8 @@ cat >! input.nml <<EOF
        affinity=.F.
 /
 
-&xgrid_nml
-! xgrid_clocks_on=.T.
+ &xgrid_nml
+       ! xgrid_clocks_on=.T.
 /
 
  &amip_interp_nml
@@ -357,8 +346,8 @@ cat >! input.nml <<EOF
  &atmos_model_nml
        dycore_only = $dycore_only
        fdiag = $fdiag
-       fullcoupler_fluxes=.true.
-       debug=.false.
+       fullcoupler_fluxes = .true.
+       debug = .true.
 /
 
  &fms_io_nml
@@ -467,12 +456,12 @@ cat >! input.nml <<EOF
        is_ideal_case = .true. !! new
 /
 
-&integ_phys_nml
+ &integ_phys_nml
        do_sat_adj = .F.
        do_inline_mp = .F.
 /
 
-&test_case_nml
+ &test_case_nml
        test_case = 20
        rp_TC = $rp_TC
        dp_TC = $dp_TC
@@ -484,18 +473,26 @@ cat >! input.nml <<EOF
        days  = $days
        hours = $hours
        minutes = $minutes
-       seconds = $seconds
+       seconds = 180.
        dt_atmos = $dt_atmos
-       do_ocean=.T.               !off with shield, on with shieldfull
-       do_ice=.T.               
-       do_land=.F.             
-       do_atmos=.T.           
-       do_flux=.T.           
+       do_ocean = .T.             !off with shield, on with shieldfull
+       do_ice = .T.               
+       do_land = .F.             
+       do_atmos = .T.           
+       do_flux = .T.           
        dt_cpld = $dt_atmos        !off with shield, on with shieldfull
        current_date =  $curr_date
        calendar = 'NOLEAP'
-      ! do_chksum= .T.
-      ! do_debug= .T.
+
+       !do_chksum= .T.
+       !do_debug= .T.
+       !concurrent = .F.
+       !atmos_npes=50
+       !ocean_npes=50
+       !calendar = 'julian'
+       !memuse_verbose = .F.
+       !atmos_nthreads = $nthreads
+       !use_hyper_thread = $hyperthread
 /
 
  &gfs_physics_nml
@@ -520,7 +517,7 @@ cat >! input.nml <<EOF
        lwhtr          = .true.
        swhtr          = .true.
        cnvgwd         = .true.
-       do_deep        = .true.
+       do_deep        = .false. !!!
        shal_cnv       = .true.
        cal_pre        = .false.
        redrag         = .true.
@@ -545,7 +542,7 @@ cat >! input.nml <<EOF
        xkzm_h         = 1.0
        cloud_gfdl     = .true.
        do_ocean       = .false.
-       sfc_coupled    = .true.
+       sfc_coupled    = .false. ! test
        fixed_date     = .true.
        fixed_solhr    = .true.
        fixed_sollat   = .true.
@@ -625,13 +622,13 @@ cat >! input.nml <<EOF
        max_axes=100 !needed when adding ocean diag entries in diag_table
 /
 
-  &interpolator_nml
+ &interpolator_nml
        interp_method = 'conserve_great_circle'
 /
 
-&namsfc
-/
 
+ &namsfc
+/
 EOF
 
 # run the executable
@@ -643,10 +640,8 @@ if ( $? != 0 ) then
    exit
 endif
 
-@ irun++
-end
+# handle data transfer below
 
-## handle data transfer below
 #
 #if ($NO_SEND == "send") then
 #
