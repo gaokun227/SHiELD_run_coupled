@@ -36,7 +36,6 @@ set days = 1
 set hord_option = "hord6"
 set warm_start = ".F." # if true, set restart_dir
 set res = "4km" # available options: 1km or 2km or 4km
-set rough = "hwrf17" # hwrf17; coare3.5; beljaars; charnock
 set MEMO = ${hord_option}"_"${deglat}"N_"${sst}"K_"${ini_storm}"_"${days}"d_"${res}
 
 set RELEASE = "SHiEMOM"
@@ -47,7 +46,7 @@ set MODE = "64bit"
 set MONO = "non-mono" 
 set GRID = "DP"
 set CASE = "TC"
-set DATE = "20240920.00Z"
+set DATE = "20240920.00Z" 
 set PBL  = "YSU"        # choices:  TKE or YSU
 set HYPT = "on"         # choices:  on, off  (controls hyperthreading)
 set COMP = "repro"       # choices:  debug, repro, prod
@@ -75,19 +74,19 @@ set FIELD_TABLE = ${RUN_DIR}/tables/field_table_6species_atmland # will be chang
 # Resolution
 switch ($res) #assuming domain size=10deg, need to adjust timestep, move it here XXXX
 case "1km":
- set npx = "1025"
- set npy = "1025"
- set k_split = "10"
+   set npx = "1025"
+   set npy = "1025"
+   set k_split = "10"
    breaksw
 case "2km":
- set npx = "513"
- set npy = "513"
- set k_split = "5"
+   set npx = "513"
+   set npy = "513"
+   set k_split = "5"
    breaksw
 case "4km":
- set npx = "257"
- set npy = "257"
- set k_split = "3"
+   set npx = "257"
+   set npy = "257"
+   set k_split = "3"
 endsw
 
 set npz = "50"
@@ -230,12 +229,8 @@ else
    endif
 
    # reset values in input.nml for restart run
-  # set make_nh = ".F."
-  # set nggps_ic = ".F."
-  # set mountain = ".T."
-  # set external_ic = ".F."
    set warm_start = ".T."
- set input_filename = 'r'
+   set input_filename = 'r'
 endif
 
 # build the date for curr_date and diag_table from DATE
@@ -317,7 +312,7 @@ cat >! input.nml <<EOF
 /
 
  &ocean_rough_nml
-       rough_scheme = $rough ! KGao: 'hwrf17' is highly recommended; options: 'hwrf17','coare3.5','beljaars','charnock'
+       rough_scheme = 'hwrf17' ! KGao: 'hwrf17' is highly recommended; options: 'hwrf17','coare3.5','beljaars','charnock'
 /
 
  &sat_vapor_pres_nml
@@ -340,25 +335,15 @@ cat >! input.nml <<EOF
        affinity=.F.
 /
 
-&xgrid_nml
-! xgrid_clocks_on=.T.
+ &xgrid_nml
+ ! xgrid_clocks_on=.T.
 /
-
- &amip_interp_nml
-       interp_oi_sst = .true.
-       use_ncep_sst = .true.
-       use_ncep_ice = .false.
-       no_anom_sst = .false.
-       data_set = 'reynolds_oi',
-       date_out_of_range = 'climo',
-/
-
 
  &atmos_model_nml
        dycore_only = $dycore_only
        fdiag = $fdiag
-       fullcoupler_fluxes=.true.
-       debug=.false.
+       fullcoupler_fluxes = .true.
+       debug = .false.
 /
 
  &fms_io_nml
@@ -383,8 +368,8 @@ cat >! input.nml <<EOF
        !npz_type = "emc"
        grid_type = 4
        deglat = $deglat
-       dx_const = 3250.
-       dy_const = 3250.
+       !dx_const = 3250. ! not used if domain_deg is set 
+       !dy_const = 3250. ! not used if domain_deg is set
        domain_deg = 10. 
        make_nh = .F. 
        fv_debug = .F.
@@ -422,7 +407,6 @@ cat >! input.nml <<EOF
 
        ! Smagorinsky
        dddmp = 0.2 ! 2nd order Smagorinsky-type divergence damping
-       smag2d = 0. ! what is the default value? Lucas suggests 0.01  
 
        ! Dissipative heating
        d_con = 1.0      ! Fraction of lost KE to be converted to heat
@@ -445,7 +429,7 @@ cat >! input.nml <<EOF
        ke_bg = 0.
        external_ic = .F.
        gfs_phil = .F. 
-       nggps_ic = .T.
+       nggps_ic = .F.
        mountain = .F.
        ncep_ic = .F.
        hord_mt = $hord_mt 
@@ -455,16 +439,14 @@ cat >! input.nml <<EOF
        hord_tr = $hord_tr 
        adjust_dry_mass = .F.
        consv_te = 0.
-       !do_sat_adj = .F. !! remove
        consv_am = .F.
        fill = .T.
        dwind_2d = .F.
        print_freq = $print_freq
        warm_start = $warm_start 
        no_dycore = $no_dycore 
-       !do_inline_mp = .T. !! remove    
        write_3d_diags = .T.
-       is_ideal_case = .true. !! new
+       is_ideal_case = .true.
 /
 
 &integ_phys_nml
@@ -554,11 +536,6 @@ cat >! input.nml <<EOF
        Ts0            = $sst
 /
 
- &sfc_prop_override_nml
-       ideal_sst_dp     = .true.
-       sst_max          = $sst
-/
-
  &gfdl_mp_nml
        delay_cond_evap = .true.
        do_cond_timescale = .true.
@@ -629,7 +606,7 @@ cat >! input.nml <<EOF
        interp_method = 'conserve_great_circle'
 /
 
-&namsfc
+  &namsfc
 /
 
 EOF
