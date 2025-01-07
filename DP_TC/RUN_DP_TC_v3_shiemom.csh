@@ -22,6 +22,8 @@ set BUILD_DIR = "~${USER}/shiemom_clean1/SHiELD_build/"                  # Build
 set RUN_DIR = "`pwd`"                           # For the diag_table, field_table, momsis input
 ################################
 
+source ${BUILD_DIR}/site/environment.intel.csh
+
 # COPY input data (for SHiELD, mosaic)
 ################################
 set INPUT_DATA = "/gpfs/f6/gfdl/world-shared/Joseph.Mouallem/shiemom_pdata/TEMP_INPUT/"
