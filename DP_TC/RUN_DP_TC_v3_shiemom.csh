@@ -15,20 +15,27 @@
 
 set echo
 
-# NEEDS TO BE SET
-################################
-set BASE_DIR    = "/gpfs/f6/gfdl/world-shared/Joseph.Mouallem/test/"     # For the sim results
-set BUILD_DIR = "~${USER}/shiemom_clean1/SHiELD_build/"                  # Build directory
-set RUN_DIR = "`pwd`"                           # For the diag_table, field_table, momsis input
-################################
+echo "Cluster: $SLURM_CLUSTER_NAME"
 
+if (${SLURM_CLUSTER_NAME} == "c6") then
+set BASE_DIR    = "/gpfs/f6/bil-coastal-gfdl/scratch/Joseph.Mouallem/test/"           # Sim/work directory - to be set
+set BUILD_DIR = "~${USER}/shiemom_clean/pubrelease_c6/SHiELD_build/"                  # Build directory - To be set
+set INPUT_DATA = "/gpfs/f6/bil-coastal-gfdl/proj-shared/gfdl_w/SHiELD_INPUT_DATA/"
+set MOSAIC_DATA = "/gpfs/f6/bil-coastal-gfdl/proj-shared/Joseph.Mouallem/shiemom_pdata/INPUT/"
+endif
+
+if (${SLURM_CLUSTER_NAME} == "c5") then
+set BASE_DIR    = "/gpfs/f5/gfdl_w/scratch/Joseph.Mouallem/test/"                     # Sim/work directory - to be set
+set BUILD_DIR = "~${USER}/shiemom_clean/pubrelease_c5/SHiELD_build/"                  # Build directory - To be set
+set INPUT_DATA = "/gpfs/f5/gfdl_w/proj-shared/SHiELD_INPUT_DATA/"
+set MOSAIC_DATA = "/gpfs/f5/gfdl_w/world-shared/Joseph.Mouallem/shiemom_pdata/INPUT/"
+endif
+
+unset echo
 source ${BUILD_DIR}/site/environment.intel.csh
+set echo
 
-# COPY input data (for SHiELD, mosaic)
-################################
-set INPUT_DATA = "/gpfs/f6/gfdl/world-shared/Joseph.Mouallem/shiemom_pdata/TEMP_INPUT/"
-set MOSAIC_DATA = "/gpfs/f6/gfdl/world-shared/Joseph.Mouallem/shiemom_pdata/INPUT/"
-################################
+set RUN_DIR = "`pwd`"                           # For the diag_table, field_table, momsis input
 
 # --- KG: optional paramters for experiments
 set sst = 303
@@ -62,7 +69,7 @@ set executable = ${BUILD_DIR}/Build/bin/SHiEMOM_${TYPE}.${COMP}.${MODE}.${EXE}
 set RUNNAME = ${DATE}.${GRID}.${MEMO}
 
 # input filesets
-set FIXDIR  = ${INPUT_DATA}/fix_am_gfsv16/
+set FIXDIR  = ${INPUT_DATA}/fix_am/
 set CLIMO_DATA = ${INPUT_DATA}/climo_data.v201807/
 
 # sending file to gfdl
